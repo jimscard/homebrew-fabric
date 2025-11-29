@@ -5,12 +5,13 @@ class FabricD < Formula
     sha256 "TODO" # Run: brew fetch --HEAD fabric-d to get the sha256
     license "MIT"
     head "https://github.com/username/fabric-d.git", branch: "main"
+    version "1.0"
 
     livecheck do
         url :stable
         strategy :github_latest
     end
-    
+
     def install
         # Install all .sh files from the repository
         Dir.glob("*.sh").each do |sh_file|
