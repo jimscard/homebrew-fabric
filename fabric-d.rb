@@ -23,6 +23,6 @@ class FabricD < Formula
     end
 
     test do
-        system "#{bin}/your-command-name", "--help"
+        system "#{bin}/fabric-d", "--help"
     end
 end
