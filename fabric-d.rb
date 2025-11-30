@@ -4,7 +4,7 @@ class FabricD < Formula
     url "https://github.com/jimscard/fabric-d/archive/refs/tags/v1.0.tar.gz"
     sha256 "TODO" # Run: brew fetch --HEAD fabric-d to get the sha256
     license "MIT"
-    head "https://github.com/username/fabric-d.git", branch: "main"
+    head "https://github.com/jimscard/fabric-d.git", branch: "main"
     version "1.0"
 
     livecheck do
