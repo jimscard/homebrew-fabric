@@ -1,7 +1,7 @@
 class FabricD < Formula
     desc "Fabric-d command-line tools"
     homepage "https://github.com/jimscard/fabric-d"
-    url "https://github.com/jimscard/fabric-d/archive/refs/heads/main.zip"
+    url "https://github.com/jimscard/fabric-d/archive/refs/tags/v1.0.tar.gz"
     sha256 "TODO" # Run: brew fetch --HEAD fabric-d to get the sha256
     license "MIT"
     head "https://github.com/username/fabric-d.git", branch: "main"
