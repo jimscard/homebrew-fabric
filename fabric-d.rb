@@ -1,11 +1,11 @@
 class FabricD < Formula
   desc "Fabric-d command-line tools"
   homepage "https://github.com/jimscard/fabric-d"
-  url "https://github.com/jimscard/fabric-d/archive/refs/tags/v1.0.tar.gz"
-  sha256 "0297f2de29810da185e365a92a22d63eb797707003ae883ce772a1a56a8f2126"
+  url "https://github.com/jimscard/fabric-d/archive/refs/tags/v1.1.tar.gz
+  sha256 "04cc7ec8c2c966d849fbf7a17111a19e0b94275af942c61427779d9ecc365dbdx"
   license "MIT"
   head "https://github.com/jimscard/fabric-d.git", branch: "main"
-  version "1.0"
+  version "1.1"
 
   livecheck do
     url :stable
