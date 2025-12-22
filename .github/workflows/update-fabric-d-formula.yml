@@ -6,7 +6,7 @@ name: Update Homebrew Formula for fabric‑d
 on:
   # Run every day at 04:00 UTC (adjust the cron as you like)
   schedule:
-    - cron: '0 4 * * *'
+    - cron: "0 4 * * *"
   # Allows manual runs from the UI
   workflow_dispatch:
 
@@ -33,8 +33,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: jimscard/homebrew-fabric
-          token: ${{ secrets.GITHUB_TOKEN }}   # auto‑generated token with write permission
-          path: homebrew-fabric               # checkout into a sub‑directory
+          token: ${{ secrets.GITHUB_TOKEN }} # auto‑generated token with write permission
+          path: homebrew-fabric # checkout into a sub‑directory
 
       # --------------------------------------------------------
       # 3.2 Install tiny utilities we’ll need
@@ -65,7 +65,7 @@ jobs:
               html_url: release.html_url,
               assets: release.assets
             };
-          result-encoding: 'none'   # pass through raw JSON
+          result-encoding: "none" # pass through raw JSON
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -158,5 +158,5 @@ jobs:
           title: "Update fabric-d.rb – version ${{ steps.latest_release.outputs.tag_name }}"
           body: |
             This PR updates the `url` and `sha256` fields in `fabric-d.rb` to point at the latest release of **jimscard/fabric-d**.
-          labels: ["automation"]
+          labels: "automation"
           # If you prefer to push directly to the default branch, skip this step
