@@ -1,0 +1,162 @@
+name: Update Homebrew Formula for fabric‑d
+
+# --------------------------------------------------------------
+# 1️⃣  WHEN TO TRIGGER
+# --------------------------------------------------------------
+on:
+  # Run every day at 04:00 UTC (adjust the cron as you like)
+  schedule:
+    - cron: '0 4 * * *'
+  # Allows manual runs from the UI
+  workflow_dispatch:
+
+# --------------------------------------------------------------
+# 2️⃣  JOB SETTINGS
+# --------------------------------------------------------------
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to push changes back to the same repo
+      contents: write
+      # Needed if you want the job to comment on PRs, etc.
+      pull-requests: write
+
+    # ----------------------------------------------------------
+    # 3️⃣  STEPS
+    # ----------------------------------------------------------
+    steps:
+      # --------------------------------------------------------
+      # 3.1 Checkout the homebrew‑fabric repository
+      # --------------------------------------------------------
+      - name: Checkout homebrew‑fabric
+        uses: actions/checkout@v4
+        with:
+          repository: jimscard/homebrew-fabric
+          token: ${{ secrets.GITHUB_TOKEN }}   # auto‑generated token with write permission
+          path: homebrew-fabric               # checkout into a sub‑directory
+
+      # --------------------------------------------------------
+      # 3.2 Install tiny utilities we’ll need
+      # --------------------------------------------------------
+      - name: Install jq & curl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      # --------------------------------------------------------
+      # 4️⃣  Fetch the latest release from the upstream repo
+      # --------------------------------------------------------
+      - name: Get latest release metadata
+        id: latest_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = {owner: "jimscard", repo: "fabric-d"};
+            // Get the most recent release (not a pre‑release if you only want stable)
+            const {data: release} = await github.rest.releases.getLatest({
+              owner,
+              repo,
+              // Optional: you can filter out prereleases by setting prerelease: false
+            });
+            // Return only the fields we need
+            return {
+              tag_name: release.tag_name,
+              html_url: release.html_url,
+              assets: release.assets
+            };
+          result-encoding: 'none'   # pass through raw JSON
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --------------------------------------------------------
+      # 5️⃣  Compute the new SHA‑256 for the source tarball
+      # --------------------------------------------------------
+      - name: Download source archive & compute SHA‑256
+        id: checksum
+        run: |
+          # The asset we care about is usually a .zip or .tar.gz – pick the first one that ends with .zip or .tar.gz
+          URL="${{ steps.latest_release.outputs.html_url }}/download/${{ steps.latest_release.outputs.tag_name }}/fabric-d-${{ steps.latest_release.outputs.tag_name }}.tar.gz"
+          echo "Downloading $URL"
+          curl -L -o /tmp/fabric-d.tar.gz "$URL"
+
+          # Compute SHA‑256
+          SHA=$(shasum -a 256 /tmp/fabric-d.tar.gz | cut -d' ' -f1)
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      # --------------------------------------------------------
+      # 6️⃣  Compare with the values already in the formula file
+      # --------------------------------------------------------
+      - name: Read current formula file
+        id: read_file
+        run: |
+          FORMULA_PATH="${{ github.workspace }}/homebrew-fabric/Formula/fabric-d.rb"
+          echo "current_url=$(grep -E '^url ' $FORMULA_PATH | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          echo "current_sha=$(grep -E '^sha256 ' $FORMULA_PATH | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Check if update is needed
+        id: check_update
+        run: |
+          # If the URL or SHA differs, we need to update
+          if [[ "${{ steps.read_file.outputs.current_url }}" != "${{ steps.checksum.outputs.url }}" ||
+                "${{ steps.read_file.outputs.current_sha }}" != "${{ steps.checksum.outputs.sha256 }}" ]]; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # --------------------------------------------------------
+      # 7️⃣  Update the formula file only when a new release exists
+      # --------------------------------------------------------
+      - name: Update formula file
+        if: steps.check_update.outputs.update_needed == 'true'
+        run: |
+          # The path inside the checked‑out workspace
+          FORMULA="${{ github.workspace }}/homebrew-fabric/Formula/fabric-d.rb"
+
+          # Replace the url and sha256 lines with the new values.
+          # Using perl for a safe replace (in‑place edit, keep original line endings)
+          perl -i -pe '
+            s|^url\s+".+"$|url "$ENV:NEW_URL"|;
+            s|^sha256\s+".+"$|sha256 "$ENV:NEW_SHA"|;
+          ' \
+            NEW_URL="${{ steps.checksum.outputs.url }}" \
+            NEW_SHA="${{ steps.checksum.outputs.sha256 }}" \
+            "$FORMULA"
+
+          # Show the diff for debugging
+          git diff "$FORMULA"
+
+      # --------------------------------------------------------
+      # 8️⃣  Commit & push only when there are changes
+      # --------------------------------------------------------
+      - name: Commit changes if any
+        if: steps.check_update.outputs.update_needed == 'true'
+        run: |
+          cd homebrew-fabric
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/fabric-d.rb
+          # If git diff returns nothing, the commit will fail – guard against that
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: bump fabric-d.rb to release ${{ steps.latest_release.outputs.tag_name }}"
+            git push origin HEAD:${{ github.ref }}
+
+      # --------------------------------------------------------
+      # 9️⃣  (Optional) Create a PR instead of pushing directly
+      # --------------------------------------------------------
+      - name: Create Pull Request (optional)
+        if: steps.check_update.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump fabric-d.rb to release ${{ steps.latest_release.outputs.tag_name }}"
+          branch: update-fabric-d-${{ steps.latest_release.outputs.tag_name }}
+          title: "Update fabric-d.rb – version ${{ steps.latest_release.outputs.tag_name }}"
+          body: |
+            This PR updates the `url` and `sha256` fields in `fabric-d.rb` to point at the latest release of **jimscard/fabric-d**.
+          labels: ["automation"]
+          # If you prefer to push directly to the default branch, skip this step
