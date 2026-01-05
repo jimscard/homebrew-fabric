@@ -56,10 +56,11 @@ jobs:
               owner: 'jimscard',
               repo: 'fabric-d'
             });
+            // Find the first asset that looks like a source archive (.tar.gz or .zip)
+            const asset = release.data.assets.find(a => a.name.endsWith('.tar.gz') || a.name.endsWith('.zip'));
             return {
               tag_name: release.data.tag_name,
-              html_url: release.data.html_url,
-              assets: release.data.assets
+              asset_url: asset ? asset.browser_download_url : ''
             };
 
       # --------------------------------------------------------
@@ -68,8 +69,11 @@ jobs:
       - name: Download source archive & compute SHA‑256
         id: checksum
         run: |
-          # The asset we care about is usually a .zip or .tar.gz – pick the first one that ends with .zip or .tar.gz
-          URL="${{ steps.latest_release.outputs.html_url }}/download/${{ steps.latest_release.outputs.tag_name }}/fabric-d-${{ steps.latest_release.outputs.tag_name }}.tar.gz"
+          URL="${{ steps.latest_release.outputs.asset_url }}"
+          if [ -z "$URL" ]; then
+            echo "No downloadable asset (.tar.gz or .zip) found on the latest release of jimscard/fabric-d" >&2
+            exit 1
+          fi
           echo "Downloading $URL"
           curl -L -o /tmp/fabric-d.tar.gz "$URL"
 
@@ -85,8 +89,8 @@ jobs:
         id: read_file
         run: |
           FORMULA_PATH="${{ github.workspace }}/homebrew-fabric/Formula/fabric-d.rb"
-          echo "current_url=$(grep -E '^url ' $FORMULA_PATH | cut -d'"' -f2)" >> $GITHUB_OUTPUT
-          echo "current_sha=$(grep -E '^sha256 ' $FORMULA_PATH | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          echo "current_url=$(grep -E '^url ' $FORMULA_PATH | cut -d'\"' -f2)" >> $GITHUB_OUTPUT
+          echo "current_sha=$(grep -E '^sha256 ' $FORMULA_PATH | cut -d'\"' -f2)" >> $GITHUB_OUTPUT
 
       - name: Check if update is needed
         id: check_update
@@ -108,15 +112,12 @@ jobs:
           # The path inside the checked‑out workspace
           FORMULA="${{ github.workspace }}/homebrew-fabric/Formula/fabric-d.rb"
 
+          NEW_URL="${{ steps.checksum.outputs.url }}"
+          NEW_SHA="${{ steps.checksum.outputs.sha256 }}"
+
           # Replace the url and sha256 lines with the new values.
-          # Using perl for a safe replace (in‑place edit, keep original line endings)
-          perl -i -pe '
-            s|^url\s+".+"$|url "$ENV:NEW_URL"|;
-            s|^sha256\s+".+"$|sha256 "$ENV:NEW_SHA"|;
-          ' \
-            NEW_URL="${{ steps.checksum.outputs.url }}" \
-            NEW_SHA="${{ steps.checksum.outputs.sha256 }}" \
-            "$FORMULA"
+          sed -E -i "s|^url .*|url \"${NEW_URL}\"|" "$FORMULA"
+          sed -E -i "s|^sha256 .*|sha256 \"${NEW_SHA}\"|" "$FORMULA"
 
           # Show the diff for debugging
           git diff "$FORMULA"
