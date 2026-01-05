@@ -47,27 +47,23 @@ jobs:
       # --------------------------------------------------------
       # 4️⃣  Fetch the latest release from the upstream repo
       # --------------------------------------------------------
-      - name: Get latest release metadata
-        id: latest_release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const {owner, repo} = {owner: "jimscard", repo: "fabric-d"};
-            // Get the most recent release (not a pre‑release if you only want stable)
-            const {data: release} = await github.rest.releases.getLatest({
-              owner,
-              repo,
-              // Optional: you can filter out prereleases by setting prerelease: false
-            });
-            // Return only the fields we need
-            return {
-              tag_name: release.tag_name,
-              html_url: release.html_url,
-              assets: release.assets
-            };
-          result-encoding: "none" # pass through raw JSON
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Get latest release metadata
+	  id: latest_release
+	  uses: actions/github-script@v7
+	  with:
+		  script: |
+		  const release = await github.rest.repos.getLatestRelease({
+		  owner: 'jimscard',
+		  repo: 'fabric-d'
+		  });
+		  return {
+		  tag_name: release.data.tag_name,
+		  html_url: release.data.html_url,
+		  assets: release.data.assets
+		  };
+		  result-encoding: "none"
+		  env:
+			  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --------------------------------------------------------
       # 5️⃣  Compute the new SHA‑256 for the source tarball
