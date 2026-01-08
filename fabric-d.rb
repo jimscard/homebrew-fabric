@@ -5,7 +5,7 @@ class FabricD < Formula
   sha256 "3553ce827720ca52a95f096af689f81563c5fe0424fc84a0b09563d0daad7567"
   license "MIT"
   head "https://github.com/jimscard/fabric-d.git", branch: "main"
-  version "1.1"
+  version "2.0.1"
 
   livecheck do
     url :stable
