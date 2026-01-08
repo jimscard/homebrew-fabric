@@ -111,10 +111,14 @@ jobs:
           
           NEW_URL="${{ steps.checksum.outputs.url }}"
           NEW_SHA="${{ steps.checksum.outputs.sha256 }}"
+          NEW_VERSION="${{ steps.latest_release.outputs.tag_name }}"
+          # Strip the 'v' prefix if present (e.g., v2.0.1 -> 2.0.1)
+          NEW_VERSION="${NEW_VERSION#v}"
 
-          # Replace the url and sha256 lines with the new values (preserving indentation)
+          # Replace the url, sha256, and version lines with the new values (preserving indentation)
           sed -i "s|^  url .*|  url \"${NEW_URL}\"|" fabric-d.rb
           sed -i "s|^  sha256 .*|  sha256 \"${NEW_SHA}\"|" fabric-d.rb
+          sed -i "s|^  version .*|  version \"${NEW_VERSION}\"|" fabric-d.rb
 
           # Show the diff for debugging
           git diff fabric-d.rb
