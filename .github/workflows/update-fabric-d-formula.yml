@@ -76,7 +76,7 @@ jobs:
           curl -L -o /tmp/fabric-d.tar.gz "$URL"
 
           # Compute SHA‑256
-          SHA=$(shasum -a 256 /tmp/fabric-d.tar.gz | cut -d' ' -f1)
+          SHA=$(sha256sum /tmp/fabric-d.tar.gz | cut -d' ' -f1)
           echo "sha256=$SHA" >> $GITHUB_OUTPUT
           echo "url=$URL" >> $GITHUB_OUTPUT
 
@@ -86,9 +86,9 @@ jobs:
       - name: Read current formula file
         id: read_file
         run: |
-          FORMULA_PATH="homebrew-fabric/Formula/fabric-d.rb"
-          echo "current_url=$(grep -E '^url ' "$FORMULA_PATH" | cut -d'"' -f2)" >> $GITHUB_OUTPUT
-          echo "current_sha=$(grep -E '^sha256 ' "$FORMULA_PATH" | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          FORMULA_PATH="homebrew-fabric/fabric-d.rb"
+          echo "current_url=$(grep '^url ' "$FORMULA_PATH" | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          echo "current_sha=$(grep '^sha256 ' "$FORMULA_PATH" | cut -d'"' -f2)" >> $GITHUB_OUTPUT
 
       - name: Check if update is needed
         id: check_update
@@ -108,7 +108,7 @@ jobs:
         if: steps.check_update.outputs.update_needed == 'true'
         run: |
           # The path inside the checked‑out workspace
-          FORMULA="homebrew-fabric/Formula/fabric-d.rb"
+          FORMULA="homebrew-fabric/fabric-d.rb"
 
           NEW_URL="${{ steps.checksum.outputs.url }}"
           NEW_SHA="${{ steps.checksum.outputs.sha256 }}"
@@ -129,7 +129,7 @@ jobs:
           cd homebrew-fabric
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/fabric-d.rb
+          git add fabric-d.rb
           # If git diff returns nothing, the commit will fail – guard against that
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit"
