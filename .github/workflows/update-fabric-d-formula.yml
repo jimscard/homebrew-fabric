@@ -135,6 +135,7 @@ jobs:
           else
             git commit -m "chore: bump fabric-d.rb to release ${{ steps.latest_release.outputs.tag_name }}"
             git push origin HEAD:${{ github.ref }}
+          fi
 
       # --------------------------------------------------------
       # 9️⃣  (Optional) Create a PR instead of pushing directly
