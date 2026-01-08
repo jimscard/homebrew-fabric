@@ -58,10 +58,8 @@ jobs:
             });
             // Find the first asset that looks like a source archive (.tar.gz or .zip)
             const asset = release.data.assets.find(a => a.name.endsWith('.tar.gz') || a.name.endsWith('.zip'));
-            return {
-              tag_name: release.data.tag_name,
-              asset_url: asset ? asset.browser_download_url : ''
-            };
+            core.setOutput('tag_name', release.data.tag_name);
+            core.setOutput('asset_url', asset ? asset.browser_download_url : '');
 
       # --------------------------------------------------------
       # 5️⃣  Compute the new SHA‑256 for the source tarball
@@ -88,16 +86,16 @@ jobs:
       - name: Read current formula file
         id: read_file
         run: |
-          FORMULA_PATH="${{ github.workspace }}/homebrew-fabric/Formula/fabric-d.rb"
-          echo "current_url=$(grep -E '^url ' $FORMULA_PATH | cut -d'\"' -f2)" >> $GITHUB_OUTPUT
-          echo "current_sha=$(grep -E '^sha256 ' $FORMULA_PATH | cut -d'\"' -f2)" >> $GITHUB_OUTPUT
+          FORMULA_PATH="homebrew-fabric/Formula/fabric-d.rb"
+          echo "current_url=$(grep -E '^url ' "$FORMULA_PATH" | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          echo "current_sha=$(grep -E '^sha256 ' "$FORMULA_PATH" | cut -d'"' -f2)" >> $GITHUB_OUTPUT
 
       - name: Check if update is needed
         id: check_update
         run: |
           # If the URL or SHA differs, we need to update
-          if [[ "${{ steps.read_file.outputs.current_url }}" != "${{ steps.checksum.outputs.url }}" ||
-                "${{ steps.read_file.outputs.current_sha }}" != "${{ steps.checksum.outputs.sha256 }}" ]]; then
+          if [[ "${{ steps.read_file.outputs.current_url }}" != "${{ steps.checksum.outputs.url }}" ]] ||
+               [[ "${{ steps.read_file.outputs.current_sha }}" != "${{ steps.checksum.outputs.sha256 }}" ]]; then
             echo "update_needed=true" >> $GITHUB_OUTPUT
           else
             echo "update_needed=false" >> $GITHUB_OUTPUT
@@ -110,14 +108,14 @@ jobs:
         if: steps.check_update.outputs.update_needed == 'true'
         run: |
           # The path inside the checked‑out workspace
-          FORMULA="${{ github.workspace }}/homebrew-fabric/Formula/fabric-d.rb"
+          FORMULA="homebrew-fabric/Formula/fabric-d.rb"
 
           NEW_URL="${{ steps.checksum.outputs.url }}"
           NEW_SHA="${{ steps.checksum.outputs.sha256 }}"
 
           # Replace the url and sha256 lines with the new values.
-          sed -E -i "s|^url .*|url \"${NEW_URL}\"|" "$FORMULA"
-          sed -E -i "s|^sha256 .*|sha256 \"${NEW_SHA}\"|" "$FORMULA"
+          sed -i "s|^url .*|url \"${NEW_URL}\"|" "$FORMULA"
+          sed -i "s|^sha256 .*|sha256 \"${NEW_SHA}\"|" "$FORMULA"
 
           # Show the diff for debugging
           git diff "$FORMULA"
