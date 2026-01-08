@@ -1,8 +1,8 @@
 class FabricD < Formula
   desc "Fabric-d command-line tools"
   homepage "https://github.com/jimscard/fabric-d"
-  url "https://github.com/jimscard/fabric-d/archive/refs/tags/v1.1.tar.gz
-  sha256 "04cc7ec8c2c966d849fbf7a17111a19e0b94275af942c61427779d9ecc365dbdx"
+  url "https://github.com/jimscard/fabric-d/releases/download/v2.0.0/fabric-d-v2.0.0.tar.gz"
+  sha256 "88a759a899ece27be6c2d8a27ad065791aceb67c3702ba9b8e7db21ba03e9101"
   license "MIT"
   head "https://github.com/jimscard/fabric-d.git", branch: "main"
   version "1.1"
